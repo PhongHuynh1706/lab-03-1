@@ -27,6 +27,7 @@ random.seed(42)
 np.random.seed(42)
 torch.manual_seed(42)
 
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 print(f"\n{'='*60}")
