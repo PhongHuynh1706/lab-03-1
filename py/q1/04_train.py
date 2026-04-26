@@ -20,6 +20,7 @@ print(f"\nTraining for {num_episodes} episodes...\n")
 
 for episode in range(num_episodes):
     state, _ = env_train.reset()
+
     episode_reward = 0
     step_count = 0
     done = False
@@ -34,8 +35,10 @@ for episode in range(num_episodes):
         action = agent.select_action(state, training=True)
         next_state, reward, terminated, truncated, _ = env_train.step(action)
         done = terminated or truncated
+        
         agent.store_transition(state, action, reward, next_state, done)
         agent.train_step(batch_size)
+
         episode_reward += reward
         step_count += 1
         state = next_state

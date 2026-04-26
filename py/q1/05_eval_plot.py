@@ -20,8 +20,8 @@ for episode in range(eval_episodes):
         # Instruction:
         # Use greedy action (training=False), interact with env, and accumulate reward.
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
-        action = None
-
+        action = agent.select_action(state, training=False)
+        
         next_state, reward, terminated, truncated, _ = env_train.step(action)
         done = terminated or truncated
         episode_reward += reward
@@ -35,6 +35,7 @@ print(f"  Average Reward: {np.mean(eval_rewards):.2f}")
 print(f"  Success Rate: {success_rate:.1f}%")
 print(f"  Min Reward: {np.min(eval_rewards):.2f}")
 print(f"  Max Reward: {np.max(eval_rewards):.2f}")
+
 
 # Source: notebooks/Lab3.1-st.ipynb code cell 27
 

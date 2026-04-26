@@ -5,7 +5,7 @@
 
 class DQNAgent:
     """Deep Q-Learning Agent for training on environments.
-
+    
     Key components:
     - Q-network: estimates Q-values
     - Target network: stabilizes training
@@ -15,13 +15,13 @@ class DQNAgent:
 
     def __init__(self, state_size=16, action_size=4, learning_rate=1e-3):
         """Initialize DQN agent.
-
+        
         Args:
             state_size: Dimension of state space
             action_size: Number of possible actions
             learning_rate: Learning rate for optimizer
         """
-
+        
         self.state_size = state_size
         self.action_size = action_size
 
@@ -35,8 +35,9 @@ class DQNAgent:
         # 2) Move networks to device (CPU or GPU).
         # 3) Initialize target_network weights to match q_network and set to eval mode.
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
-        self.q_network = None
-        self.target_network = None
+        self.q_network = DQNNetwork(state_size, action_size).to(device)
+        self.target_network = DQNNetwork(state_size, action_size).to(device)
+
         self.target_network.load_state_dict(self.q_network.state_dict())
         self.target_network.eval()
 
@@ -53,9 +54,13 @@ class DQNAgent:
         # Instruction:
         # Build one-hot state tensor and select greedy action from q_network.
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
-        state_onehot = None
+        state_onehot = np.zeros(self.state_size, dtype=np.float32)
+        state_onehot[state] = 1.0
+        state_onehot = torch.from_numpy(state_onehot).unsqueeze(0).to(device)
+
         with torch.no_grad():
-            q_values = None
+            q_values = self.q_network(state_onehot)
+
         return q_values.argmax(dim=1).item()
 
     def store_transition(self, state, action, reward, next_state, done):
@@ -64,30 +69,40 @@ class DQNAgent:
         # then push transition to replay buffer.
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
         state_onehot = np.zeros(self.state_size, dtype=np.float32)
+        state_onehot[state] = 1.0
+
         next_state_onehot = np.zeros(self.state_size, dtype=np.float32)
+        next_state_onehot[next_state] = 1.0
+        
         self.replay_buffer.push(state_onehot, action, reward, next_state_onehot, done)
 
     def train_step(self, batch_size=32):
         """Update Q-network with one mini-batch from replay buffer.
-
+        
         DQN Update Rule:
             Q_target(s,a) = r + gamma * max_a' Q_target(s',a')
             Loss = (Q_target(s,a) - Q_network(s,a))^2
-
+        
         Args:
             batch_size: Size of mini-batch for training
         """
 
         if len(self.replay_buffer) < batch_size:
-            return  # Not enough samples to train
-
+            return # Not enough samples to train
+        
         # Sample a batch of transitions from the replay buffer
         states, actions, rewards, next_states, dones = self.replay_buffer.sample(batch_size)
 
         # Instruction:
         # 1) Compute q_values for taken actions.
-
+        
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
+        states = states.to(device)
+        actions = actions.to(device)
+        rewards = rewards.to(device)
+        next_states = next_states.to(device)
+        dones = dones.to(device)
+
 
         q_values = self.q_network(states).gather(1, actions.unsqueeze(1)).squeeze(1)
 
@@ -95,11 +110,11 @@ class DQNAgent:
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
         with torch.no_grad():
             next_q_values = self.target_network(next_states).max(dim=1)[0]
-            target_q_values = None
+            target_q_values = rewards + self.gamma * next_q_values * (1 - dones)
 
         # 3) Compute loss, backward, optimizer.step().
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
-        loss = None
+        loss = self.loss_fn(q_values, target_q_values)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -109,13 +124,12 @@ class DQNAgent:
         self.update_counter += 1
         if self.update_counter % 100 == 0:
             # HERE
-            pass
+            self.target_network.load_state_dict(self.q_network.state_dict())
 
     def decay_epsilon(self):
         # Instruction:
         # Decay epsilon after each episode, ensuring it does not go below epsilon_min.
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
-        self.epsilon = None
-
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
 
 print("✓ DQNAgent class defined")

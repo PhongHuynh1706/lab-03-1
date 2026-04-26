@@ -3,11 +3,9 @@
 # PART 2: Deep Q-Network (DQN) on FrozenLake-v1
 
 ### 2.1: Core Component - Replay Buffer
-
 print("\n" + "="*60)
 print("PART 2: DQN ON FROZENLAKE-V1")
 print("="*60)
-
 
 class ReplayBuffer:
     """Store and sample experiences for training DQN.
@@ -50,8 +48,8 @@ class ReplayBuffer:
         # Instruction:
         # 1) Use random.sample to get a batch of transitions from self.buffer
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
-        batch = None
-
+        batch = random.sample(self.buffer, batch_size)
+        
         # 2) Convert lists to numpy arrays first to avoid slow tensor creation warnings
         states_np = np.array([t[0] for t in batch], dtype=np.float32)
         actions_np = np.array([t[1] for t in batch], dtype=np.int64)
@@ -61,17 +59,16 @@ class ReplayBuffer:
 
         # 3) Convert numpy arrays to PyTorch tensors and move to device
         ### YOU NEED TO WRITE YOUR CODE BELOW ###
-        states = None
-        actions = None
-        rewards = None
-        next_states = None
-        dones = None
+        states = torch.from_numpy(states_np)
+        actions = torch.from_numpy(actions_np)
+        rewards = torch.from_numpy(rewards_np)
+        next_states = torch.from_numpy(next_states_np)
+        dones = torch.from_numpy(dones_np)
 
         return states, actions, rewards, next_states, dones
 
     def __len__(self):
         """Return current buffer size."""
         return len(self.buffer)
-
 
 print("✓ ReplayBuffer class defined")
