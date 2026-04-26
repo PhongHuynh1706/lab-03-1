@@ -41,29 +41,67 @@ print(f"  Max Reward: {np.max(eval_rewards):.2f}")
 
 # PART 2: Deep Q-Network (DQN) on FrozenLake-v1
 ### 2.6: Visualization of Training Progress
+# =========================
+# 2.6: Visualization (FIXED - SEPARATE LR PLOTS)
+# =========================
 
-print("\n2.6: Visualization")
-print("-" * 60)
+learning_rates = [1e-2, 1e-3, 5e-4]
 
-fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+fig, axes = plt.subplots(1, 3, figsize=(18, 4))
 
-# Plot 1: Training rewards with moving average
-axes[0].plot(episode_rewards, alpha=0.3, label='Episode Reward', color='blue')
-ma_window = 50
-ma_rewards = np.convolve(episode_rewards, np.ones(ma_window)/ma_window, mode='valid')
-axes[0].plot(range(ma_window-1, len(episode_rewards)), ma_rewards, label=f'MA({ma_window})', color='red', linewidth=2)
-axes[0].set_xlabel('Episode', fontsize=11)
-axes[0].set_ylabel('Episode Reward', fontsize=11)
-axes[0].set_title('Training Progress: FrozenLake-v1', fontsize=12, fontweight='bold')
-axes[0].legend(fontsize=10)
-axes[0].grid(True, alpha=0.3)
+for idx, lr in enumerate(learning_rates):
 
-# Plot 2: Evaluation reward distribution
-axes[1].bar(['Failed', 'Success'], [sum(1 for r in eval_rewards if r == 0), sum(1 for r in eval_rewards if r > 0)])
-axes[1].set_ylabel('Number of Episodes', fontsize=11)
-axes[1].set_title(f'Evaluation Results (Success Rate: {success_rate:.1f}%)', fontsize=12, fontweight='bold')
-axes[1].grid(True, alpha=0.3, axis='y')
+    rewards_all_seeds = results[lr]["reward"]
+
+    # average over seeds (nếu có nhiều seed)
+    max_len = min(len(r) for r in rewards_all_seeds)
+    rewards_all_seeds = [r[:max_len] for r in rewards_all_seeds]
+
+    avg_rewards = np.mean(rewards_all_seeds, axis=0)
+
+    # moving average
+    ma_window = 50
+    if len(avg_rewards) >= ma_window:
+        ma_rewards = np.convolve(
+            avg_rewards,
+            np.ones(ma_window) / ma_window,
+            mode='valid'
+        )
+        axes[idx].plot(
+            range(ma_window - 1, len(avg_rewards)),
+            ma_rewards,
+            color='red',
+            label=f'MA({ma_window})'
+        )
+
+    axes[idx].plot(avg_rewards, alpha=0.4, label='Reward')
+    axes[idx].set_title(f'Learning Rate = {lr}')
+    axes[idx].set_xlabel('Episode')
+    axes[idx].set_ylabel('Reward')
+    axes[idx].grid(True, alpha=0.3)
+    axes[idx].legend()
 
 plt.tight_layout()
 plt.show()
-plt.close(fig)
+
+fig, axes = plt.subplots(1, 3, figsize=(18, 4))
+
+for idx, lr in enumerate(learning_rates):
+
+    losses_all_seeds = results[lr]["loss"]
+
+    # cắt cùng length
+    max_len = min(len(l) for l in losses_all_seeds)
+    losses_all_seeds = [l[:max_len] for l in losses_all_seeds]
+
+    avg_loss = np.mean(losses_all_seeds, axis=0)
+
+    axes[idx].plot(avg_loss, label="Loss")
+    axes[idx].set_title(f"Loss Curve (lr={lr})")
+    axes[idx].set_xlabel("Training Step")
+    axes[idx].set_ylabel("MSE Loss")
+    axes[idx].grid(True, alpha=0.3)
+    axes[idx].legend()
+
+plt.tight_layout()
+plt.show()

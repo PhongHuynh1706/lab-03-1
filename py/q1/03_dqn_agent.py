@@ -41,8 +41,16 @@ class DQNAgent:
         self.target_network.load_state_dict(self.q_network.state_dict())
         self.target_network.eval()
 
-        self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
+        optimizer_type = "adam"  # hoặc "sgd"
+
+        if optimizer_type.lower() == "sgd":
+            self.optimizer = optim.SGD(self.q_network.parameters(), lr=learning_rate)
+        elif optimizer_type.lower() == "adam":
+            self.optimizer = optim.Adam(self.q_network.parameters(), lr=learning_rate)
+        else:
+            raise ValueError("Unsupported optimizer type. Use 'adam' or 'sgd'.")
         self.loss_fn = nn.MSELoss()
+        self.loss_history = []
 
         self.replay_buffer = ReplayBuffer(capacity=10000)
         self.update_counter = 0
@@ -118,6 +126,8 @@ class DQNAgent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+        self.loss_history.append(loss.item())
 
         # 4) Update target network every 100 steps.
         ### YOU NEED TO WRITE YOUR CODE BELOW ###

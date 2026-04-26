@@ -4,52 +4,50 @@
 ### 2.4: Training DQN on FrozenLake
 
 # Create environment
-env_train = gym.make('FrozenLake-v1', map_name='4x4', is_slippery=False)
-agent = DQNAgent(state_size=16, action_size=4, learning_rate=1e-3)
+learning_rates = [1e-2, 1e-3, 5e-4]
+seeds = [40, 41, 42, 43, 44]
 
-# Training parameters
 num_episodes = 500
 batch_size = 32
 
-episode_rewards = []
-episode_lengths = []
+results = {}
 
-print(f"\n2.4: Training DQN on FrozenLake")
-print("-" * 60)
-print(f"\nTraining for {num_episodes} episodes...\n")
+for lr in learning_rates:
+    results[lr] = {"reward": [], "loss": []}
 
-for episode in range(num_episodes):
-    state, _ = env_train.reset()
+    for seed in seeds:
 
-    episode_reward = 0
-    step_count = 0
-    done = False
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
 
-    while not done:
-        # Instruction:
-        # 1) Select action with epsilon-greedy policy.
-        # 2) Step environment.
-        # 3) Store transition and train one step.
-        # 4) Update state, reward, counters.
-        ### YOU NEED TO WRITE YOUR CODE BELOW ###
-        action = agent.select_action(state, training=True)
-        next_state, reward, terminated, truncated, _ = env_train.step(action)
-        done = terminated or truncated
-        
-        agent.store_transition(state, action, reward, next_state, done)
-        agent.train_step(batch_size)
+        env_train = gym.make('FrozenLake-v1', map_name='4x4', is_slippery=False)
 
-        episode_reward += reward
-        step_count += 1
-        state = next_state
+        agent = DQNAgent(state_size=16, action_size=4, learning_rate=lr)
 
-    agent.decay_epsilon()
-    episode_rewards.append(episode_reward)
-    episode_lengths.append(step_count)
+        episode_rewards = []
 
-    if (episode + 1) % 100 == 0:
-        avg_reward = np.mean(episode_rewards[-100:])
-        print(f"Episode {episode+1:3d}/{num_episodes} | Avg Reward (last 100): {avg_reward:.2f} | Epsilon: {agent.epsilon:.3f}")
+        for episode in range(num_episodes):
 
-print(f"\nTraining completed!")
-print(f"Final average reward (last 100 episodes): {np.mean(episode_rewards[-100:]):.2f}")
+            state, _ = env_train.reset()
+            done = False
+            ep_reward = 0
+
+            while not done:
+
+                action = agent.select_action(state, training=True)
+
+                next_state, reward, terminated, truncated, _ = env_train.step(action)
+                done = terminated or truncated
+
+                agent.store_transition(state, action, reward, next_state, done)
+                agent.train_step(batch_size)
+
+                state = next_state
+                ep_reward += reward
+
+            agent.decay_epsilon()
+            episode_rewards.append(ep_reward)
+
+        results[lr]["reward"].append(episode_rewards)
+        results[lr]["loss"].append(agent.loss_history)
